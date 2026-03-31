@@ -450,9 +450,11 @@ async function fetchSheetData() {
   if (rows.length < 2) throw new Error('Sheet appears empty');
 
   const headers = rows[0].map(h => h.replace(/^"|"$/g, '').trim());
-  const blklotIdx  = headers.findIndex(h => h.toLowerCase() === BLKLOT_SHT.toLowerCase());
-  const statusIdx  = headers.findIndex(h => h.toLowerCase() === STATUS_COL.toLowerCase());
-  const addressIdx = headers.findIndex(h => h.toLowerCase().includes('address'));
+  const blklotIdx   = headers.findIndex(h => h.toLowerCase() === BLKLOT_SHT.toLowerCase());
+  const statusIdx   = headers.findIndex(h => h.toLowerCase() === STATUS_COL.toLowerCase());
+  const addressIdx  = headers.findIndex(h => h.toLowerCase().includes('address'));
+  // ── FIX: find Total Percentage column in the sheet ──────────────────────
+  const totalPctIdx = headers.findIndex(h => h.toLowerCase().includes('total percentage'));
 
   if (blklotIdx === -1) throw new Error(`Column "${BLKLOT_SHT}" not found. Headers: ${headers.join(', ')}`);
   if (statusIdx === -1) throw new Error(`Column "${STATUS_COL}" not found. Headers: ${headers.join(', ')}`);
@@ -462,9 +464,16 @@ async function fetchSheetData() {
     const row = rows[i];
     const id  = row[blklotIdx]?.replace(/^"|"$/g, '').trim();
     if (!id) continue;
+
+    // ── FIX: store totalPct from sheet, stripping any % sign ────────────
+    const rawPct = totalPctIdx >= 0
+      ? (row[totalPctIdx] || '').replace(/^"|"$/g, '').replace('%', '').trim()
+      : '0';
+
     lookup[id] = {
-      status:  (row[statusIdx]  || '').replace(/^"|"$/g, '').trim(),
-      address: addressIdx >= 0 ? (row[addressIdx] || '').replace(/^"|"$/g, '').trim() : ''
+      status:   (row[statusIdx] || '').replace(/^"|"$/g, '').trim(),
+      address:  addressIdx >= 0 ? (row[addressIdx] || '').replace(/^"|"$/g, '').trim() : '',
+      totalPct: parseFloat(rawPct) || 0
     };
   }
   return lookup;
@@ -488,9 +497,9 @@ function getStatus(feature, lookup) {
 }
 
 function getParcelStyle(status) {
-  if (status === 'yes') return { fillColor: '#16a34a', fillOpacity: 0.5, color: '#16a34a', weight: 2, opacity: 1 };
+  if (status === 'yes') return { fillColor: '#16a34a', fillOpacity: 0.7, color: '#16a34a', weight: 2, opacity: 1 };
   if (status === 'no')  return { fillColor: '#ef4444', fillOpacity: 0.4, color: '#ef4444', weight: 2, opacity: 1 };
-  return                       { fillColor: '#f59e0b', fillOpacity: 0.25, color: '#d97706', weight: 1, opacity: 0.8 };
+  return                       { fillColor: '#f59e0b', fillOpacity: 0.15, color: '#d97706', weight: 1, opacity: 0.8 };
 }
 
 // ── RENDER MAP ───────────────────────────────────────────────────────────────
@@ -509,7 +518,8 @@ function renderMap(geojson, lookup) {
 
       if (status === 'yes') {
         signed++;
-        const pctVal = parseFloat(feature.properties?.['Total Percentage'] || 0);
+        // ── FIX: use live sheet value, not stale GeoJSON property ───────
+        const pctVal = rec?.totalPct ?? 0;
         signedPct += pctVal;
       }
 
