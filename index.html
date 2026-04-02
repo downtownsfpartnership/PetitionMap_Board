@@ -564,12 +564,8 @@ function renderMap(geojson, lookup) {
 
   geojsonLayer = L.geoJSON(geojson, {
     style: feature => {
-      const coords = JSON.stringify(feature.geometry?.coordinates);
-      const statuses = boundaryStatuses[coords] || [];
-      const hasYes = statuses.some(s => s === 'yes');
-      const allYes = statuses.every(s => s === 'yes');
-      const effectiveStatus = (hasYes && !allYes) ? 'partial' : getStatus(feature, lookup);
-      return getParcelStyle(effectiveStatus);
+      const status = getStatus(feature, lookup);
+      return getParcelStyle(status);
     },
     onEachFeature: (feature, layer) => {
       total++;
