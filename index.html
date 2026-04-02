@@ -512,8 +512,9 @@ async function fetchGeoJSON() {
 }
 
 // ── PARCEL STATUS HELPER ─────────────────────────────────────────────────────
+function geoVal(v) { return String(v || '').replace(/^'|'$/g, '').trim(); }
 function getStatus(feature, lookup) {
-  const id = String(feature.properties?.[BLKLOT_GEO] || '').trim();
+  const id = geoVal(f.properties?.[BLKLOT_GEO]);
   const rec = lookup[id];
   const raw = (rec?.status || feature.properties?.['Petition Tracking'] || '').trim().toLowerCase();
   if (raw === 'yes') return 'yes';
@@ -551,7 +552,7 @@ function renderMap(geojson, lookup) {
 
   geojson.features.forEach((f, i) => {
     const coords = JSON.stringify(f.geometry?.coordinates);
-    const id = String(f.properties?.[BLKLOT_GEO] || '').trim();
+    const id = geoVal(f.properties?.[BLKLOT_GEO]);
     const rec = lookup[id];
     // Only push a status if this blklot actually exists in the sheet
     if (rec) {
@@ -597,7 +598,7 @@ function renderMap(geojson, lookup) {
     },
     onEachFeature: (feature, layer) => {
       total++;
-      const id     = String(feature.properties?.[BLKLOT_GEO] || '').trim();
+      const id     = geoVal(feature.properties?.[BLKLOT_GEO]);
       const rec    = lookup[id];
       const status = getStatus(feature, lookup);
 
