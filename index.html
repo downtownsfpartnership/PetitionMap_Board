@@ -526,6 +526,7 @@ function getParcelStyle(status) {
   if (status === 'yes') return { fillColor: '#16a34a', fillOpacity: 0.7, color: '#16a34a', weight: 2, opacity: 1 };
   if (status === 'no')  return { fillColor: '#ef4444', fillOpacity: 0.4, color: '#ef4444', weight: 2, opacity: 1 };
   if (status === 'city property')  return { fillColor: '#F4C430', fillOpacity: 0.5, color: '#F4C430', weight: 2, opacity: 1 };
+  if (status === 'partial') return { fillColor: 'url(#hatch-green)', fillOpacity: 1, color: '#16a34a', weight: 2, opacity: 1 };
   return                       { fillColor: '#f59e0b', fillOpacity: 0.15, color: '#d97706', weight: 1, opacity: 0.8 };
 }
 
@@ -533,6 +534,28 @@ function getParcelStyle(status) {
 function renderMap(geojson, lookup) {
   if (geojsonLayer) { map.removeLayer(geojsonLayer); }
 
+  if (!document.getElementById('hatch-svg-defs')) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.id = 'hatch-svg-defs';
+    svg.setAttribute('style', 'position:absolute;width:0;height:0;overflow:hidden');
+    svg.innerHTML = `<defs>
+      <pattern id="hatch-green" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+        <line x1="0" y1="0" x2="0" y2="8" stroke="#16a34a" stroke-width="3" stroke-opacity="0.75"/>
+      </pattern>
+    </defs>`;
+    document.body.appendChild(svg);
+  }
+
+  const boundaryStatuses = {};
+  geojson.features.forEach(f => {
+    const coords = JSON.stringify(f.geometry?.coordinates);
+    const id = String(f.properties?.[BLKLOT_GEO] || '').trim();
+    const rec = lookup[id];
+    const raw = (rec?.status || f.properties?.['Petition Tracking'] || '').trim().toLowerCase();
+    const status = raw === 'yes' ? 'yes' : raw === 'no' ? 'no' : raw === 'city property' ? 'city property' : 'pending';
+    if (!boundaryStatuses[coords]) boundaryStatuses[coords] = [];
+    boundaryStatuses[coords].push(status);
+  });
   let total = 0;
 
   // Use the sheet-computed values directly — no GeoJSON matching needed for the percentage
@@ -540,7 +563,14 @@ function renderMap(geojson, lookup) {
   const signedCount = lookup.__sheetSignedCount;
 
   geojsonLayer = L.geoJSON(geojson, {
-    style: feature => getParcelStyle(getStatus(feature, lookup)),
+    style: feature => {
+      const coords = JSON.stringify(feature.geometry?.coordinates);
+      const statuses = boundaryStatuses[coords] || [];
+      const hasYes = statuses.some(s => s === 'yes');
+      const allYes = statuses.every(s => s === 'yes');
+      const effectiveStatus = (hasYes && !allYes) ? 'partial' : getStatus(feature, lookup);
+      return getParcelStyle(effectiveStatus);
+    },
     onEachFeature: (feature, layer) => {
       total++;
       const id     = String(feature.properties?.[BLKLOT_GEO] || '').trim();
