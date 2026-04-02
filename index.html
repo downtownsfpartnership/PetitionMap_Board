@@ -563,21 +563,7 @@ function renderMap(geojson, lookup) {
     }
     boundaryKeys.set(i, coords);
   });
-  /// DEBUG — remove after
-  console.log('Sample GeoJSON blklots:', geojson.features.slice(0,5).map(f => ({
-    blklot: JSON.stringify(String(f.properties?.[BLKLOT_GEO] || '').trim()),
-    address: f.properties?.['Site Address'],
-    allProps: Object.keys(f.properties || {})
-  })));
-  console.log('Sample lookup keys:', Object.keys(lookup).slice(0,5));
-  Object.entries(boundaryStatuses).forEach(([coords, statuses]) => {
-    if (statuses.includes('yes') && !statuses.every(s => s === 'yes')) {
-      const ids = geojson.features
-        .filter(f => JSON.stringify(f.geometry?.coordinates) === coords)
-        .map(f => f.properties?.[BLKLOT_GEO]);
-      console.log('PARTIAL boundary blklots:', ids, '→ statuses:', statuses);
-    }
-  });
+
   
   let total = 0;
 
@@ -602,8 +588,8 @@ function renderMap(geojson, lookup) {
       const rec    = lookup[id];
       const status = getStatus(feature, lookup);
 
-      const address    = feature.properties?.['Site Address']?.trim() || rec?.address || '—';
-      const ballotVote = feature.properties?.['2026 Ballot Vote'] || '—';
+      const address    = geoVal(feature.properties?.['Site Address']) || rec?.address || '—';
+      const ballotVote = geoVal(feature.properties?.['2026 Ballot Vote']) || '—';
 
       const statusBadge =
         status === 'yes' ? `<span class="badge badge-yes">Yes</span>` :
