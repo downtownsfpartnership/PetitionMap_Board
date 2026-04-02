@@ -568,8 +568,8 @@ function renderMap(geojson, lookup) {
       const statuses = boundaryStatuses[coords] || [];
       const hasYes = statuses.some(s => s === 'yes');
       const allYes = statuses.every(s => s === 'yes');
-      const thisStatus = getStatus(feature, lookup);
-      const effectiveStatus = (hasYes && !allYes && thisStatus !== 'yes') ? 'partial' : thisStatus;
+      const anyNonYes = statuses.some(s => s !== 'yes');
+      const effectiveStatus = (hasYes && anyNonYes) ? 'partial' : getStatus(feature, lookup);
       return getParcelStyle(effectiveStatus);
     },
     onEachFeature: (feature, layer) => {
