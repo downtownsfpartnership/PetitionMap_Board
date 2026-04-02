@@ -514,9 +514,9 @@ async function fetchGeoJSON() {
 // ── PARCEL STATUS HELPER ─────────────────────────────────────────────────────
 function geoVal(v) { return String(v || '').replace(/^'|'$/g, '').trim(); }
 function getStatus(feature, lookup) {
-  const id = geoVal(f.properties?.[BLKLOT_GEO]);
+  const id = geoVal(feature.properties?.[BLKLOT_GEO]);
   const rec = lookup[id];
-  const raw = (rec?.status || feature.properties?.['Petition Tracking'] || '').trim().toLowerCase();
+  const raw = (rec?.status || geoVal(feature.properties?.['Petition Tracking'])).trim().toLowerCase();
   if (raw === 'yes') return 'yes';
   if (raw === 'no')  return 'no';
   if (raw === 'city property') return 'city property';
