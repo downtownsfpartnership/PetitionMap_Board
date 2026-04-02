@@ -553,10 +553,13 @@ function renderMap(geojson, lookup) {
     const coords = JSON.stringify(f.geometry?.coordinates);
     const id = String(f.properties?.[BLKLOT_GEO] || '').trim();
     const rec = lookup[id];
-    const raw = (rec?.status || f.properties?.['Petition Tracking'] || '').replace(/^"|"$/g, '').trim().toLowerCase();
-    const status = raw === 'yes' ? 'yes' : raw === 'no' ? 'no' : raw === 'city property' ? 'city property' : 'pending';
-    if (!boundaryStatuses[coords]) boundaryStatuses[coords] = [];
-    boundaryStatuses[coords].push(status);
+    // Only push a status if this blklot actually exists in the sheet
+    if (rec) {
+      const raw = rec.status.replace(/^"|"$/g, '').trim().toLowerCase();
+      const status = raw === 'yes' ? 'yes' : raw === 'no' ? 'no' : raw === 'city property' ? 'city property' : 'pending';
+      if (!boundaryStatuses[coords]) boundaryStatuses[coords] = [];
+      boundaryStatuses[coords].push(status);
+    }
     boundaryKeys.set(i, coords);
   });
   let total = 0;
